@@ -1,0 +1,27 @@
+
+name: reverse-proxy
+
+services:
+  web:
+    image: reverse-proxy:latest
+    container_name: reverse-proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx-certbot
+      args:
+        - NGINX_CONFIG_FILE=${NGINX_CONFIG_FILE}
+        - ACME_CONTACT_EMAIL=${ACME_CONTACT_EMAIL}
+    expose:
+      - 80
+      - 443
+    ports:
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
+    networks:
+      - reverve-proxy-network
+    restart: unless-stopped
+
+networks:
+  reverve-proxy-network:
+    name: reverve-proxy-network
+    driver: bridge

@@ -1,0 +1,74 @@
+
+###########################
+## Set GLOBAL BUILD ARGS ##
+###########################
+
+# Set NGINX version
+ARG NGINX_VERSION="latest"
+
+# Set NGINX configuration
+ARG NGINX_CONFIG_FILE="./nginx-custom.conf"
+
+
+
+#################################
+## Stage 1: Create NGINX image ##
+#################################
+
+# Create image
+FROM nginx:${NGINX_VERSION} AS core_builder
+
+# set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    rm -rf /var/lib/apt/lists/*
+
+
+
+##########################################
+## Stage 2: Install management packages ##
+##########################################
+
+# Create image
+FROM core_builder AS core_builder_mgmt
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # to see process with pid 1
+        procps \
+        # to allow edit files
+        vim \
+        # to show progress
+        pv && \
+    rm -rf /var/lib/apt/lists/*
+
+
+
+################################
+## Stage 3: Setup NGINX image ##
+################################
+
+# Create image
+FROM core_builder_mgmt AS nginx
+
+# set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew ARGs
+ARG NGINX_CONFIG_FILE
+
+# Setup NGINX
+COPY ${NGINX_CONFIG_FILE} /etc/nginx/conf.d/default.conf
+RUN chmod a+r,o+w /etc/nginx/conf.d/default.conf
+
+# OBS:
+# By proxying DNS records through Cloudflare there is no need to use Let's Encrypt to allow HTTPS!
+# See: https://developers.cloudflare.com/dns/manage-dns-records/reference/proxied-dns-records/
